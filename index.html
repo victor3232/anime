@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>AnimeBox Stream</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="app-logo">AB</div>
+      <div>
+        <h1>AnimeBox<span>Serial</span></h1>
+        <p>Streaming anime gratis • Tanpa berlangganan</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="home-page">
+      <div id="search-bar">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Cari judul atau tag anime..."
+        />
+        <button id="search-btn" onclick="searchAnime()">Cari</button>
+      </div>
+
+      <div class="filter-row">
+        <button id="trending-btn" class="tab-btn active" onclick="setMode('trending')">
+          🔥 Trending
+        </button>
+        <button id="latest-btn" class="tab-btn" onclick="setMode('latest')">
+          🆕 Terbaru
+        </button>
+        <button id="random-btn" class="tab-btn" onclick="setMode('recommend')">
+          🎲 Rekomendasi
+        </button>
+      </div>
+
+      <section class="section-header">
+        <h2 id="section-title">Terbaru!</h2>
+        <p id="section-subtitle">
+          Nikmati update anime setiap hari secara gratis.
+        </p>
+      </section>
+
+      <div id="anime-list" class="grid loading">Loading drama...</div>
+    </section>
+  </main>
+
+  <footer>
+    Website sederhana unofficial untuk nonton anime dari berbagai sumber.<br />
+    Tidak menyimpan video apa pun — semua streaming langsung dari sumber
+    resmi.<br />
+    Dibuat untuk keperluan pribadi & eksperimen. Gunakan dengan bijak.
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
