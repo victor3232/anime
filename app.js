@@ -1,27 +1,44 @@
 // ========================
 // CONFIG
 // ========================
-const API_BASE = 'https://sankavollerei.com';          // host api
-const STREAM_BASE = `${API_BASE}/anime/stream`;        // prefix stream
+
+// pakai host yang dulu sudah berhasil
+const API_HOST = 'https://www.sankavollerei.com';
+const STREAM_BASE = `${API_HOST}/anime/stream`;
 
 let currentMode = 'latest';   // 'latest' | 'trending' | 'random' | 'search'
 let currentPage = 1;
 let isLoading = false;
 let lastQuery = '';
-let currentAnime = null;      // untuk player
+let currentAnime = null;
 let currentEpisodes = [];
 
 // ========================
 // HELPERS
 // ========================
 async function fetchJson(path) {
+  const url = `${STREAM_BASE}${path}`;
   try {
-    const res = await fetch(`${STREAM_BASE}${path}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    return json;
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      const textErr = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} - ${textErr.slice(0, 120)}`);
+    }
+
+    const text = await res.text();
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      // kalau bukan JSON, lempar error dengan isi awal respon
+      throw new Error(
+        `Response bukan JSON (mungkin HTML / error dari server):\n` +
+          text.slice(0, 200)
+      );
+    }
   } catch (err) {
-    console.error('API error:', err);
+    console.error('API error:', url, err);
     throw err;
   }
 }
@@ -30,17 +47,31 @@ function setActiveTab(mode) {
   currentMode = mode;
   currentPage = 1;
 
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn =>
+    btn.classList.remove('active')
+  );
   if (mode === 'latest') document.getElementById('latest-btn')?.classList.add('active');
   if (mode === 'trending') document.getElementById('trending-btn')?.classList.add('active');
   if (mode === 'random') document.getElementById('random-btn')?.classList.add('active');
 
-  const titleEl = document.getElementById('section-label');
-  if (!titleEl) return;
-  if (mode === 'latest') titleEl.textContent = 'Terbaru!';
-  else if (mode === 'trending') titleEl.textContent = 'Sedang Populer';
-  else if (mode === 'random') titleEl.textContent = 'Rekomendasi Acak';
-  else if (mode === 'search') titleEl.textContent = 'Hasil Pencarian';
+  const labelEl = document.getElementById('section-label');
+  const subEl = document.getElementById('section-subtitle');
+
+  if (!labelEl || !subEl) return;
+
+  if (mode === 'latest') {
+    labelEl.textContent = 'Terbaru!';
+    subEl.textContent = 'Nikmati update anime setiap hari secara gratis.';
+  } else if (mode === 'trending') {
+    labelEl.textContent = 'Sedang Populer';
+    subEl.textContent = 'Anime yang paling sering ditonton pengguna.';
+  } else if (mode === 'random') {
+    labelEl.textContent = 'Rekomendasi Acak';
+    subEl.textContent = 'Bingung nonton apa? Coba beberapa anime acak ini.';
+  } else if (mode === 'search') {
+    labelEl.textContent = 'Hasil Pencarian';
+    subEl.textContent = `Menampilkan hasil untuk: "${lastQuery}"`;
+  }
 }
 
 function showHome() {
@@ -66,10 +97,11 @@ async function loadLatest(reset = true) {
   try {
     const data = await fetchJson(`/latest/${currentPage}`);
     const list = data?.data || data?.results || [];
+
     appendAnimes(list, { reset, tag: 'Baru' });
     currentPage++;
   } catch (err) {
-    listEl.innerHTML = `<p style="padding:20px;">Error load list: ${err}</p>`;
+    listEl.innerHTML = `<p style="padding:20px;">Error load list:<br>${err}</p>`;
   } finally {
     isLoading = false;
   }
@@ -88,30 +120,33 @@ async function loadTrending(reset = true) {
     const data = await fetchJson('/popular');
     const list = data?.data || data?.results || [];
     appendAnimes(list, { reset, tag: 'Populer' });
-    currentPage = 2; // kalau mau nanti pakai paging juga
+    currentPage = 2;
   } catch (err) {
-    listEl.innerHTML = `<p style="padding:20px;">Error load list: ${err}</p>`;
+    listEl.innerHTML = `<p style="padding:20px;">Error load list:<br>${err}</p>`;
   } finally {
     isLoading = false;
   }
 }
 
-// optional random → pakai latest page random saja
 async function loadRandom(reset = true) {
   if (isLoading) return;
   isLoading = true;
 
   const listEl = document.getElementById('anime-list');
-  if (reset) listEl.innerHTML = '<p class="loading">Mengacak anime...</p>';
+  if (reset) {
+    listEl.innerHTML = '<p class="loading">Mengacak anime...</p>';
+  }
 
   try {
-    const randomPage = Math.floor(Math.random() * 5) + 1; // page 1–5
+    const randomPage = Math.floor(Math.random() * 5) + 1;
     const data = await fetchJson(`/latest/${randomPage}`);
-    const list = (data?.data || data?.results || []).sort(() => Math.random() - 0.5);
+    const list = (data?.data || data?.results || []).sort(
+      () => Math.random() - 0.5
+    );
     appendAnimes(list.slice(0, 20), { reset, tag: 'Random' });
     currentPage = randomPage;
   } catch (err) {
-    listEl.innerHTML = `<p style="padding:20px;">Error load list: ${err}</p>`;
+    listEl.innerHTML = `<p style="padding:20px;">Error load list:<br>${err}</p>`;
   } finally {
     isLoading = false;
   }
@@ -119,6 +154,7 @@ async function loadRandom(reset = true) {
 
 async function searchAnime(reset = true) {
   if (isLoading) return;
+
   const q = document.getElementById('search-input').value.trim();
   if (!q) return alert('Masukkan judul anime dulu.');
 
@@ -130,16 +166,19 @@ async function searchAnime(reset = true) {
     lastQuery = q;
     const data = await fetchJson(`/search/${encodeURIComponent(q)}`);
     const list = data?.data || data?.results || [];
+    setActiveTab('search');
     appendAnimes(list, { reset: true, tag: 'Search' });
     currentPage = 2;
   } catch (err) {
-    listEl.innerHTML = `<p style="padding:20px;">Error pencarian: ${err}</p>`;
+    listEl.innerHTML = `<p style="padding:20px;">Error pencarian:<br>${err}</p>`;
   } finally {
     isLoading = false;
   }
 }
 
-// tambahkan ke grid
+// ========================
+// TAMBAH KE GRID
+// ========================
 function appendAnimes(animes, options = {}) {
   const listEl = document.getElementById('anime-list');
   if (options.reset) {
@@ -155,8 +194,9 @@ function appendAnimes(animes, options = {}) {
   }
 
   let html = listEl.innerHTML;
+  const tag = options.tag || 'Anime';
 
-  animes.forEach((anime, idx) => {
+  animes.forEach(anime => {
     const cover =
       anime.poster ||
       anime.image ||
@@ -176,9 +216,6 @@ function appendAnimes(animes, options = {}) {
       anime.chapter ||
       '';
 
-    const tag = options.tag || 'Anime';
-
-    // slug untuk detail stream API
     const slug =
       anime.slug ||
       anime.slugAnime ||
@@ -186,7 +223,7 @@ function appendAnimes(animes, options = {}) {
       anime.slug_anime ||
       '';
 
-    const safeSlug = slug.replace(/'/g, "\\'");
+    const safeSlug = String(slug).replace(/'/g, "\\'");
 
     html += `
       <article class="drama-card" onclick="showDetail('${safeSlug}')">
@@ -262,9 +299,6 @@ async function showDetail(slug) {
       let epHtml = '';
       episodes.forEach((ep, index) => {
         const num = ep.episode || ep.number || ep.ep || index + 1;
-
-        // ⚠️ INI PENTING:
-        // cari field slug untuk endpoint /anime/stream/episode/:slug
         const epSlug =
           ep.slug ||
           ep.slugEpisode ||
@@ -286,11 +320,9 @@ async function showDetail(slug) {
       epListEl.innerHTML = epHtml;
     }
 
-    // ganti tampilan
     document.getElementById('home-page').style.display = 'none';
     document.getElementById('detail-page').style.display = 'block';
 
-    // auto play eps pertama kalau ada
     if (episodes && episodes.length > 0) {
       const first = episodes[0];
       const firstSlug =
@@ -320,7 +352,6 @@ async function playEpisode(epSlug, epNumber) {
     return;
   }
 
-  // highlight tombol episode aktif
   document.querySelectorAll('.episode-btn').forEach(btn => {
     btn.classList.remove('playing');
     if (btn.dataset.slug === epSlug) btn.classList.add('playing');
@@ -333,10 +364,6 @@ async function playEpisode(epSlug, epNumber) {
     const res = await fetchJson(`/episode/${epSlug}`);
     const data = res?.data || res;
 
-    // ================================
-    // BAGIAN PENTING: CARI URL STREAM
-    // ================================
-    // Cek beberapa kemungkinan nama field:
     let sources =
       data.sources ||
       data.streaming ||
@@ -346,7 +373,6 @@ async function playEpisode(epSlug, epNumber) {
       [];
 
     if (!Array.isArray(sources)) {
-      // kadang format: {streaming: {url: '...'}}
       sources = [sources];
     }
 
@@ -358,19 +384,17 @@ async function playEpisode(epSlug, epNumber) {
       '';
 
     if (!streamUrl) {
-      // kalau masih kosong, log ke console supaya kamu bisa lihat strukturnya
-      console.log('Response episode API (cek di sini untuk nama field url):', data);
+      console.log('Response episode API (cek field URL di sini):', data);
       playerEl.innerHTML = `
         <p style="padding:20px; color:#ffb3b3;">
           Gagal menemukan link streaming di respon API.<br>
-          Buka DevTools &gt; Console di PC untuk lihat struktur JSON,
-          lalu sesuaikan bagian <code>playEpisode()</code> di app.js (nama field URL).
+          Coba buka DevTools &gt; Console di PC untuk lihat struktur JSON,
+          lalu sesuaikan bagian <code>playEpisode()</code> di app.js dengan nama field URL yang benar.
         </p>
       `;
       return;
     }
 
-    // jika berupa //domain.com, tambahkan https:
     if (streamUrl.startsWith('//')) {
       streamUrl = 'https:' + streamUrl;
     }
@@ -389,7 +413,6 @@ async function playEpisode(epSlug, epNumber) {
       </div>
       <p class="player-note">
         Jika video tidak muncul, coba reload halaman atau pilih episode lain.
-        Beberapa server sumber kadang membalas 503 seperti yang muncul di JSON.
       </p>
     `;
   } catch (err) {
@@ -403,24 +426,22 @@ async function playEpisode(epSlug, epNumber) {
 }
 
 // ========================
-// INFINITE SCROLL LIST
+// INFINITE SCROLL (optional utk latest)
 // ========================
 window.addEventListener('scroll', () => {
-  if (currentMode === 'search' || currentMode === 'trending' || currentMode === 'random') return;
+  if (currentMode !== 'latest') return;
   if (isLoading) return;
 
   const nearBottom =
     window.innerHeight + window.scrollY >= document.body.offsetHeight - 500;
 
   if (nearBottom) {
-    if (currentMode === 'latest') {
-      loadLatest(false);
-    }
+    loadLatest(false);
   }
 });
 
 // ========================
-// EVENT BIND
+// GLOBAL HOOKS UNTUK HTML
 // ========================
 window.setMode = function (mode) {
   setActiveTab(mode);
@@ -430,7 +451,6 @@ window.setMode = function (mode) {
 };
 
 window.searchAnime = function () {
-  setActiveTab('search');
   searchAnime(true);
 };
 
@@ -438,7 +458,7 @@ window.showDetail = showDetail;
 window.backToHome = backToHome;
 window.playEpisode = playEpisode;
 
-// start
+// start saat page load
 window.addEventListener('load', () => {
   setActiveTab('latest');
   loadLatest(true);
