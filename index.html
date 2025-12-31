@@ -2,11 +2,24 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>AnimeBox Stream</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+  />
+  <title>AnimeBox Serial</title>
+
+  <!-- favicon sederhana, opsional -->
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='18' ry='18' fill='url(%23g)'/%3E%3Cpolygon points='26,20 46,32 26,44' fill='white'/%3E%3C/svg%3E"
+  />
+
+  <!-- CSS dari jawaban sebelumnya -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- ================= HEADER ================= -->
   <header class="header">
     <div class="header-inner">
       <div class="app-logo">AB</div>
@@ -17,8 +30,11 @@
     </div>
   </header>
 
+  <!-- ================= MAIN ================= -->
   <main>
+    <!-- ====== HALAMAN BERANDA / LIST ====== -->
     <section id="home-page">
+      <!-- Search bar -->
       <div id="search-bar">
         <input
           type="text"
@@ -28,29 +44,75 @@
         <button id="search-btn" onclick="searchAnime()">Cari</button>
       </div>
 
+      <!-- Tabs -->
       <div class="filter-row">
-        <button id="trending-btn" class="tab-btn active" onclick="setMode('trending')">
+        <button
+          id="trending-btn"
+          class="tab-btn"
+          onclick="setMode('trending')"
+        >
           🔥 Trending
         </button>
-        <button id="latest-btn" class="tab-btn" onclick="setMode('latest')">
+        <button
+          id="latest-btn"
+          class="tab-btn active"
+          onclick="setMode('latest')"
+        >
           🆕 Terbaru
         </button>
-        <button id="random-btn" class="tab-btn" onclick="setMode('recommend')">
+        <button
+          id="random-btn"
+          class="tab-btn"
+          onclick="setMode('random')"
+        >
           🎲 Rekomendasi
         </button>
       </div>
 
+      <!-- Judul section -->
       <section class="section-header">
-        <h2 id="section-title">Terbaru!</h2>
+        <h2 id="section-label">Terbaru!</h2>
         <p id="section-subtitle">
           Nikmati update anime setiap hari secara gratis.
         </p>
       </section>
 
-      <div id="anime-list" class="grid loading">Loading drama...</div>
+      <!-- Grid list anime -->
+      <div id="anime-list" class="grid loading">
+        <p>Loading anime...</p>
+      </div>
+    </section>
+
+    <!-- ====== HALAMAN DETAIL & PLAYER ====== -->
+    <section id="detail-page" style="display: none;">
+      <!-- Header detail -->
+      <div class="detail-header" style="margin-bottom: 10px;">
+        <button class="tab-btn" onclick="backToHome()">
+          ← Kembali ke Beranda
+        </button>
+      </div>
+
+      <!-- Info anime -->
+      <div id="anime-detail" style="margin-bottom: 16px;"></div>
+
+      <!-- Daftar Episode -->
+      <h2 class="section-header" style="margin-top: 10px; margin-bottom: 8px;">
+        Daftar Episode
+      </h2>
+      <div
+        id="episode-list"
+        class="episode-grid"
+        style="display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 16px; font-size: 13px;"
+      >
+        Loading episode...
+      </div>
+
+      <!-- Player -->
+      <div id="player"></div>
     </section>
   </main>
 
+  <!-- ================= FOOTER ================= -->
   <footer>
     Website sederhana unofficial untuk nonton anime dari berbagai sumber.<br />
     Tidak menyimpan video apa pun — semua streaming langsung dari sumber
@@ -58,6 +120,7 @@
     Dibuat untuk keperluan pribadi & eksperimen. Gunakan dengan bijak.
   </footer>
 
+  <!-- Script utama -->
   <script src="app.js" defer></script>
 </body>
 </html>
